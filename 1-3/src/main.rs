@@ -10,31 +10,28 @@ fn main() {
     println!("{} -> {}", best_key as char, decode(&encoded, best_key));
 }
 
-fn find_best_key(encoded: &Vec<u8>)  -> u8 {
-    let mut best_score = 0;
-    let mut best_key = 33;
-    for key_char in 33..126 {
-        let decoded: Vec<u8> = encoded.iter().map(|x| x ^ key_char).collect();
-        let score = count_alphanumeric_chars(&decoded);
-        if score > best_score {
-            best_key = key_char;
-            best_score = score;
-        }
-    }
-    best_key
+fn find_best_key(encoded: &Vec<u8>) -> u8 {
+    (('!' as u8)..('~' as u8)).max_by_key(|key|score(encoded, *key)).unwrap()
 }
 
-fn decode(encoded: &Vec<u8>, key_char: u8) -> String {
-    let decoded: Vec<u8> = encoded.iter().map(|x| x ^ key_char).collect();
-    String::from_utf8(decoded).unwrap()
+fn score(encoded: &Vec<u8>, key: u8) -> usize {
+    count_alphabetic_chars(xor(encoded, key))
 }
 
-fn is_alphanumeric_char(byte: u8) -> bool {
-    byte > 64 && byte < 123
+fn xor(encoded: &Vec<u8>, key: u8) -> Vec<u8> {
+    encoded.iter().map(|x| x ^ key).collect()
 }
 
-fn count_alphanumeric_chars(bytes: &Vec<u8>) -> usize {
-    bytes.iter().filter(|&x| is_alphanumeric_char(*x)).count()
+fn count_alphabetic_chars(bytes: Vec<u8>) -> usize {
+    bytes.iter().filter(is_alphabetic_char).count()
+}
+
+fn is_alphabetic_char(byte: &&u8) -> bool {
+    **byte >= ('A' as u8) && **byte < ('z' as u8) || **byte == (' ' as u8)
+}
+
+fn decode(encoded: &Vec<u8>, key: u8) -> String {
+    String::from_utf8(xor(encoded, key)).unwrap()
 }
 
 #[test]
@@ -58,22 +55,22 @@ fn can_decrypt() {
 }
 
 #[test]
-fn can_tell_if_byte_is_an_alphanumeric_char() {
+fn can_tell_if_byte_is_an_alphabetic_char() {
     let ascii_printable_char = "61".from_hex().unwrap()[0];
     
-    assert!(is_alphanumeric_char(ascii_printable_char));
+    assert!(is_alphabetic_char(&&ascii_printable_char));
 }
 
 #[test]
-fn can_tell_if_byte_is_not_an_alphanumeric_char() {
+fn can_tell_if_byte_is_not_an_alphabetic_char() {
     let not_an_ascii_printable_char = "00".from_hex().unwrap()[0];
     
-    assert!(! is_alphanumeric_char(not_an_ascii_printable_char));
+    assert!(! is_alphabetic_char(&&not_an_ascii_printable_char));
 }
 
 #[test]
 fn can_count_how_many_bytes_are_alphanumeric_chars() {
     let data_with_two_printable_chars = "00660065".from_hex().unwrap();
     
-    assert_eq!(2, count_alphanumeric_chars(&data_with_two_printable_chars));
+    assert_eq!(2, count_alphabetic_chars(data_with_two_printable_chars));
 }
